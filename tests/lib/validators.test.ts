@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   commentSchema, itemSchema, loginSchema, messageSendSchema, paginationSchema,
-  parseItemInput, registerSchema, reviewSchema, verificationReviewSchema,
+  parseItemInput, registerSchema, reportSchema, reviewSchema, verificationReviewSchema,
+  verificationSchema,
 } from '@/lib/validators'
 
 const validItem = {
@@ -86,5 +87,20 @@ describe('其余 schema', () => {
     expect(paginationSchema.safeParse({ limit: 0 }).success).toBe(false)
     expect(paginationSchema.safeParse({ limit: 51 }).success).toBe(false)
     expect(paginationSchema.parse({ limit: 50 }).limit).toBe(50)
+  })
+})
+
+describe('reportSchema / verificationSchema', () => {
+  it('举报：理由 5–500 字、目标类型仅 ITEM/USER', () => {
+    expect(reportSchema.safeParse({ targetType: 'ITEM', targetId: 'x', reason: '疑似违禁物品' }).success).toBe(true)
+    expect(reportSchema.safeParse({ targetType: 'ITEM', targetId: 'x', reason: '太短' }).success).toBe(false)
+    expect(reportSchema.safeParse({ targetType: 'ITEM', targetId: 'x', reason: 'x'.repeat(501) }).success).toBe(false)
+    expect(reportSchema.safeParse({ targetType: 'HACK', targetId: 'x', reason: '疑似违禁物品' }).success).toBe(false)
+  })
+
+  it('认证申请：学号 4–20 位、照片必须是 /uploads/ 路径', () => {
+    expect(verificationSchema.safeParse({ studentNo: '2023010101', proofImageUrl: '/uploads/2026/a.webp' }).success).toBe(true)
+    expect(verificationSchema.safeParse({ studentNo: '123', proofImageUrl: '/uploads/2026/a.webp' }).success).toBe(false)
+    expect(verificationSchema.safeParse({ studentNo: '2023010101', proofImageUrl: 'https://evil.com/a.png' }).success).toBe(false)
   })
 })
