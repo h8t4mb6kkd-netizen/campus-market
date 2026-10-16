@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { CommentSection } from '@/components/item-detail/CommentSection'
+import { FavoriteButton } from '@/components/item-detail/FavoriteButton'
 import { ImageCarousel } from '@/components/item-detail/ImageCarousel'
 import { SellerCard } from '@/components/item-detail/SellerCard'
 import { StatusBadge } from '@/components/ui/Badge'
@@ -32,6 +33,20 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
     })
   if (!item) notFound()
 
+  if (user) {
+    // 浏览历史：重复浏览只更新时间（fire-and-forget，不阻塞渲染）
+    void prisma.viewHistory
+      .upsert({
+        where: { userId_itemId: { userId: user.id, itemId: item.id } },
+        create: { userId: user.id, itemId: item.id },
+        update: { viewedAt: new Date() },
+      })
+      .catch(() => {})
+  }
+  const favorited = user
+    ? Boolean(await prisma.favorite.findUnique({ where: { userId_itemId: { userId: user.id, itemId: item.id } } }))
+    : false
+
   const comments = await queryComments(item.id)
   const currentUser = user ? { id: user.id, username: user.username, avatarUrl: user.avatarUrl } : null
 
@@ -58,9 +73,12 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
             <li className="flex items-center gap-1"><Icon name="eye" size={13} />{item.viewCount} 次浏览 · {formatRelativeTime(item.createdAt)}发布</li>
           </ul>
           <div className="mt-4 flex gap-2">
-            <button type="button" disabled className="flex-1 rounded-btn border border-line bg-white px-3 py-2 text-sm font-semibold text-muted opacity-60">
-              <Icon name="heart" size={15} className="mr-1 inline" />收藏
-            </button>
+            <FavoriteButton
+              itemId={item.id}
+              initialFavorited={favorited}
+              initialCount={item.favoriteCount}
+              isLoggedIn={Boolean(user)}
+            />
             <button type="button" disabled className="flex-1 rounded-btn bg-brand px-3 py-2 text-sm font-semibold text-white opacity-60">
               <Icon name="chat" size={15} className="mr-1 inline" />聊一聊
             </button>
