@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server'
 import { ApiError, errorResponse, readJson } from '@/lib/api'
 import { buildSessionCookie, createSession, hashPassword } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { ensureSameOrigin } from '@/lib/origin'
 import { registerSchema } from '@/lib/validators'
 
 export async function POST(req: Request): Promise<Response> {
   try {
+    ensureSameOrigin(req)
     const input = registerSchema.parse(await readJson(req))
     const emailTaken = await prisma.user.findUnique({ where: { email: input.email } })
     if (emailTaken) throw new ApiError('CONFLICT', '该邮箱已注册', { email: '该邮箱已注册' })

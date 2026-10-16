@@ -44,6 +44,15 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(400)
     expect((await res.json()).error.fields.password).toBeTruthy()
   })
+
+  it('跨源 Origin 注册被拒绝（403）', async () => {
+    const res = await registerPOST(new Request('http://t/api/auth/register', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://evil.com', host: 'localhost:3000' },
+      body: JSON.stringify({ username: '跨源', email: 'evil@campus.dev', password: 'password123' }),
+    }))
+    expect(res.status).toBe(403)
+  })
 })
 
 describe('POST /api/auth/login', () => {

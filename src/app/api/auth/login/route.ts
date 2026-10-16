@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server'
 import { ApiError, errorResponse, readJson } from '@/lib/api'
 import { buildSessionCookie, createSession, verifyPassword } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { ensureSameOrigin } from '@/lib/origin'
 import { loginSchema } from '@/lib/validators'
 
 export async function POST(req: Request): Promise<Response> {
   try {
+    ensureSameOrigin(req)
     const input = loginSchema.parse(await readJson(req))
     const user = await prisma.user.findUnique({ where: { email: input.email } })
     // 统一文案：邮箱不存在与密码错误不区分（防枚举）
