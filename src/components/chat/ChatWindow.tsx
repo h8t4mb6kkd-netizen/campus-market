@@ -18,7 +18,14 @@ interface ChatWindowProps {
   initialMessages: MessageData[]
 }
 
-export function ChatWindow({ conversationId, currentUserId, other, item, initialMessages }: ChatWindowProps) {
+export function ChatWindow({
+  conversationId,
+  currentUserId,
+  other,
+  item,
+  initialMessages,
+  initialHasMore,
+}: ChatWindowProps & { initialHasMore: boolean }) {
   const { socket, connected } = useSocket()
   const [messages, setMessages] = useState<LocalMessage[]>(initialMessages)
   const [input, setInput] = useState('')
@@ -26,6 +33,12 @@ export function ChatWindow({ conversationId, currentUserId, other, item, initial
   const typingStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastTypingSentAt = useRef(0)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const [hasMore, setHasMore] = useState(initialHasMore)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+  const hasConnectedRef = useRef(false)
 
   // 进入会话：join + 标记已读（断线重连后自动重放）
   useEffect(() => {
@@ -83,6 +96,36 @@ export function ChatWindow({ conversationId, currentUserId, other, item, initial
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' })
   }, [messages.length, otherTyping])
+
+  // 断线重连后按最后消息时间戳拉增量，一条不丢（Spec §5.2 第 7 步）
+  useEffect(() => {
+    if (!socket) return
+    const onConnect = async () => {
+      if (hasConnectedRef.current) {
+        const last = [...messagesRef.current].reverse().find((m) => !m.id.startsWith('local-'))
+        if (last) {
+          const res = await fetch(
+            `/api/conversations/${conversationId}/messages?after=${encodeURIComponent(last.createdAt)}`,
+          )
+          if (res.ok) {
+            const data: { messages: MessageData[] } = await res.json()
+            if (data.messages.length > 0) {
+              setMessages((prev) => {
+                const known = new Set(prev.map((m) => m.id))
+                return [...prev, ...data.messages.filter((m) => !known.has(m.id))]
+              })
+              socket.emit('message:read', { conversationId })
+            }
+          }
+        }
+      }
+      hasConnectedRef.current = true
+    }
+    socket.on('connect', onConnect)
+    return () => {
+      socket.off('connect', onConnect)
+    }
+  }, [socket, conversationId])
 
   const send = useCallback(
     (type: 'TEXT' | 'IMAGE', content: string) => {
@@ -153,7 +196,35 @@ export function ChatWindow({ conversationId, currentUserId, other, item, initial
         </span>
       </Link>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
+        {hasMore && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              disabled={loadingMore}
+              onClick={async () => {
+                const oldest = messagesRef.current.find((m) => !m.id.startsWith('local-'))
+                if (!oldest || !scrollRef.current) return
+                setLoadingMore(true)
+                const previousHeight = scrollRef.current.scrollHeight
+                const res = await fetch(`/api/conversations/${conversationId}/messages?cursor=${oldest.id}`)
+                setLoadingMore(false)
+                if (!res.ok) return
+                const data: { messages: MessageData[]; nextCursor: string | null } = await res.json()
+                setMessages((prev) => [...data.messages, ...prev])
+                setHasMore(data.nextCursor !== null)
+                requestAnimationFrame(() => {
+                  if (scrollRef.current) {
+                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight - previousHeight
+                  }
+                })
+              }}
+              className="rounded-full bg-bg px-3 py-1 text-xs text-muted hover:text-ink"
+            >
+              {loadingMore ? '加载中…' : '加载更早消息'}
+            </button>
+          </div>
+        )}
         {messages.map((message, index) => {
           const mine = message.sender.id === currentUserId
           const prev = messages[index - 1]

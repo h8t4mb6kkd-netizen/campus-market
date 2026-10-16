@@ -28,6 +28,8 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
     include: messageInclude,
   })
   const other = conversation.buyerId === user.id ? conversation.seller : conversation.buyer
+  const total = await prisma.message.count({ where: { conversationId: id } })
+  const initialHasMore = total > 30
 
   return (
     <ChatWindow
@@ -46,6 +48,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
         coverUrl: conversation.item.images[0]?.url ?? null,
       }}
       initialMessages={rows.reverse().map(toMessageData)}
+      initialHasMore={initialHasMore}
     />
   )
 }
