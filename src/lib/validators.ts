@@ -99,6 +99,11 @@ export const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 })
 
+export const userBanSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('BAN') }),
+  z.object({ action: z.literal('UNBAN') }),
+])
+
 export const statusActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('RESERVE') }),
   z.object({ action: z.literal('UNRESERVE') }),
