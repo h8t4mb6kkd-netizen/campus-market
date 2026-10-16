@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "setup": "node scripts/ensure-env.mjs && npm install && prisma migrate deploy && prisma db seed"
+    "postinstall": "prisma generate",
+    "setup": "node scripts/ensure-env.mjs && npm install && prisma generate && prisma migrate deploy && prisma db seed"
   },
   "prisma": { "seed": "tsx prisma/seed.ts" },
   "dependencies": {
