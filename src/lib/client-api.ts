@@ -37,7 +37,7 @@ export function useApi(): { request: <T>(url: string, init?: RequestInit) => Pro
         if (!fields) toast.error(message)
         return { ok: false, message, fields }
       }
-      return { ok: true, data: body as T }
+      return { ok: true, data: (body ?? {}) as T }
     },
     [router, pathname, toast],
   )

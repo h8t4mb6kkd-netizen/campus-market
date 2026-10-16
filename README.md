@@ -217,3 +217,15 @@ dev 起服后对关键路由逐个请求，记录状态码：
    - `src/components/chat/ChatWindow.tsx` 在**渲染期**写 `messagesRef.current = messages`，触发 React 19 规则 `react-hooks/refs`（error）。改为在 `useEffect(() => { messagesRef.current = messages }, [messages])` 中同步，语义不变（ref 仅被事件回调 / 重连拉取读取，从不参与渲染），lint 通过。
    - `tests/realtime/socket.test.ts` 中一个未被使用的 `seller` 解构（warning），已移除。
    - 修复后 `npm run lint` 输出为空（0 error / 0 warning），实时层 7 条用例与全量 158 条用例复跑仍全绿。
+
+## 已知限制（透明化清单）
+
+- 并发注册的极窄竞态窗口：唯一索引兜底保证数据不脏，冲突时返回 409（已处理）；无并发注册的真实场景。
+- 非 JSON 响应的客户端契约：`useApi` 对 `ok` 但非 JSON 的响应返回空对象（已防御）；当前所有接口均返回 JSON。
+- `unread:changed` 目前仅由“已读”触发；未来若新增批量已读接口需同步补发。
+- 会话列表上限 50 条、消息增量上限 200 条：校园规模足够，未做游标分页。
+- `ChatWindow` 首帧 socket 未就绪时发送被静默忽略；图片上传失败仅静默返回（无 Toast）。
+- 管理后台的守卫分支（未登录/非管理员重定向）以路由冒烟覆盖，未做组件级测试。
+- `soldCount` 语义为“卖家成交单数”（Spec §5.7 的“双方+1”按实现修正为仅卖家；买家侧无展示）。
+- `next.config.ts` 与 `public/*.svg` 含脚手架残留，无功能影响。
+- 分页/搜索为 SQLite LIKE 实现；切 PostgreSQL 后可按 Spec §9 升级为全文搜索。

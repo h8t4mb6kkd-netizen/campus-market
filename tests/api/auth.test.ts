@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { POST as loginPOST } from '@/app/api/auth/login/route'
 import { POST as logoutPOST } from '@/app/api/auth/logout/route'
 import { POST as registerPOST } from '@/app/api/auth/register/route'
 import { parseCookieHeader, requireUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { resetDb } from '../helpers/db'
+import { createTestUser } from '../helpers/factory'
 
 function jsonReq(url: string, body: unknown, token?: string): Request {
   const headers: Record<string, string> = { 'content-type': 'application/json' }
@@ -52,6 +53,18 @@ describe('POST /api/auth/register', () => {
       body: JSON.stringify({ username: '跨源', email: 'evil@campus.dev', password: 'password123' }),
     }))
     expect(res.status).toBe(403)
+  })
+
+  it('并发窗口内的唯一约束冲突（P2002）→ 409 而非 500', async () => {
+    const u = await createTestUser()
+    // 模拟两个并发请求都通过了 findUnique 检查的竞态窗口
+    const spy = vi.spyOn(prisma.user, 'findUnique').mockResolvedValue(null)
+    const res = await registerPOST(jsonReq('http://t/api/auth/register', {
+      username: '新昵称', email: u.email, password: 'password123',
+    }))
+    spy.mockRestore()
+    expect(res.status).toBe(409)
+    expect((await res.json()).error.fields).toBeTruthy()
   })
 })
 
