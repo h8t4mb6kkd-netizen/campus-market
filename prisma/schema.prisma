@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 注意：枚举一律 String + 应用层 TS 联合类型（constants.ts），保证 SQLite/PG 双兼容
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String
+  avatarUrl    String?
+  role         String    @default("USER") // USER | ADMIN
+  status       String    @default("ACTIVE") // ACTIVE | BANNED
+  campus       String?
+  verifiedAt   DateTime?
+  ratingAvg    Float     @default(0)
+  ratingCount  Int       @default(0)
+  soldCount    Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  sessions             Session[]
+  verificationRequests VerificationRequest[]
+  items                Item[]              @relation("ItemSeller")
+  boughtItems          Item[]              @relation("ItemBuyer")
+  conversationsAsBuyer  Conversation[]     @relation("ConvBuyer")
+  conversationsAsSeller Conversation[]     @relation("ConvSeller")
+  messages             Message[]
+  favorites            Favorite[]
+  viewHistory          ViewHistory[]
+  comments             Comment[]
+  reviewsWritten       Review[]            @relation("ReviewAuthor")
+  reviewsReceived      Review[]            @relation("ReviewTarget")
+  reports              Report[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model VerificationRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentNo     String
+  proofImageUrl String
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  rejectReason  String?
+  createdAt     DateTime  @default(now())
+  reviewedAt    DateTime?
+
+  @@index([status, createdAt])
+}
+
+model Item {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  priceCents    Int
+  negotiable    Boolean   @default(false)
+  category      String
+  condition     String
+  location      String
+  status        String    @default("ON_SALE") // ON_SALE | RESERVED | SOLD | DELISTED
+  delistedBy    String? // USER | ADMIN（仅 DELISTED 时有值）
+  sellerId      String
+  seller        User      @relation("ItemSeller", fields: [sellerId], references: [id])
+  buyerId       String?
+  buyer         User?     @relation("ItemBuyer", fields: [buyerId], references: [id])
+  viewCount     Int       @default(0)
+  favoriteCount Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  soldAt        DateTime?
+
+  images        ItemImage[]
+  conversations Conversation[]
+  comments      Comment[]
+  reviews       Review[]
+  favorites     Favorite[]
+  viewHistory   ViewHistory[]
+
+  @@index([status, createdAt])
+  @@index([sellerId])
+  @@index([category, status])
+}
+
+model ItemImage {
+  id     String @id @default(cuid())
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  url    String
+  width  Int
+  height Int
+  sort   Int    @default(0)
+
+  @@index([itemId])
+}
+
+model Conversation {
+  id                 String   @id @default(cuid())
+  itemId             String
+  item               Item     @relation(fields: [itemId], references: [id])
+  buyerId            String
+  buyer              User     @relation("ConvBuyer", fields: [buyerId], references: [id])
+  sellerId           String
+  seller             User     @relation("ConvSeller", fields: [sellerId], references: [id])
+  lastMessageAt      DateTime @default(now())
+  lastMessagePreview String   @default("")
+  createdAt          DateTime @default(now())
+
+  messages Message[]
+
+  @@unique([itemId, buyerId])
+  @@index([sellerId, lastMessageAt])
+  @@index([buyerId, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  type           String       @default("TEXT") // TEXT | IMAGE
+  content        String
+  clientId       String? // 幂等标识，与 conversationId 联合唯一
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([conversationId, clientId])
+  @@index([conversationId, createdAt])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+}
+
+model ViewHistory {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId   String
+  item     Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  viewedAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+  @@index([userId, viewedAt])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([itemId, createdAt])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id])
+  authorId  String
+  author    User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  targetId  String
+  target    User     @relation("ReviewTarget", fields: [targetId], references: [id])
+  rating    Int
+  content   String?
+  createdAt DateTime @default(now())
+
+  @@unique([itemId, authorId])
+  @@index([targetId])
+}
+
+model Report {
+  id         String    @id @default(cuid())
+  reporterId String
+  reporter   User      @relation(fields: [reporterId], references: [id])
+  targetType String // ITEM | USER
+  targetId   String
+  reason     String
+  status     String    @default("PENDING") // PENDING | RESOLVED | DISMISSED
+  createdAt  DateTime  @default(now())
+  handledAt  DateTime?
+
+  @@index([status, createdAt])
+}

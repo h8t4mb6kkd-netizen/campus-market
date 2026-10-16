@@ -11,5 +11,8 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
+    globalSetup: ['./tests/global-setup.ts'],
+    env: { DATABASE_URL: 'file:./test.db' },
+    fileParallelism: false,
   },
 })

@@ -46,3 +46,9 @@ next-env.d.ts
 public/uploads/*
 !public/uploads/.gitkeep
 *.log
+
+# Prisma 6 resolves sqlite file: URLs relative to the schema dir (prisma/)
+prisma/dev.db
+prisma/test.db
+prisma/dev.db-journal
+prisma/test.db-journal
