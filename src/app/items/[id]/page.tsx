@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { CommentSection } from '@/components/item-detail/CommentSection'
@@ -24,7 +25,11 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
         seller: true,
       },
     })
-    .catch(() => null)
+    .catch((err: unknown) => {
+      // 仅“记录不存在”转 404，其余异常重抛给错误边界
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') return null
+      throw err
+    })
   if (!item) notFound()
 
   const comments = await queryComments(item.id)
