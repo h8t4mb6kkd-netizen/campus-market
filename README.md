@@ -167,8 +167,8 @@ campus-market/
 | # | 验收项 | 结果 | 验证方式 | 证据摘要 |
 |---|---|---|---|---|
 | 1 | `npm run setup`（install + migrate + seed）后 `npm run dev` 一条命令跑起全套 | ✅ | 自动化 | `setup` 输出 `seed 完成：用户 5 · 商品 33 · 会话 3 · 消息 11`；`dev` 输出 `校园集市已启动: http://localhost:3000` |
-| 2 | seed 后首页 30+ 商品瀑布流，滚动流畅、无布局抖动 | ✅（数据）/ 部分人工 | 自动化 + 说明 | 商品 33 件（API `limit=50` 返回 60 条含分页游标）；瀑布流布局为纯 CSS 定宽分列，抖动风险由 `tests/lib/waterfall.test.ts` 与组件测试覆盖；**「滚动流畅度」需真机肉眼确认，本次未在浏览器实测** |
-| 3 | 双窗口实时聊天全通：消息、未读红点、已读、正在输入、断线重连 | ✅ | 自动化（等价覆盖） | `npx vitest run tests/realtime/socket.test.ts` —— 7 条端到端用例 **全过**（9.0s，spawn 真实 `server.ts` + Socket.IO 客户端）：消息收发 / 未读计数 / 已读回执 / 正在输入 / 断线重连 / 房间鉴权等。**由自动化 socket 套件覆盖双窗口行为，未开双浏览器窗口** |
+| 2 | seed 后首页 30+ 商品瀑布流，滚动流畅、无布局抖动 | ✅（数据）/ 部分人工 | 自动化 + 说明 | 公开列表 30 件（在售 29 · 已预订 1）；`/api/items?limit=50` 单页返回、`nextCursor=null`（实测 `items: 30, nextCursor: null`，公开列表只含在售 + 已预订）；瀑布流布局为纯 CSS 定宽分列，抖动风险由 `tests/lib/waterfall.test.ts` 与组件测试覆盖；**「滚动流畅度」需真机肉眼确认，本次未在浏览器实测** |
+| 3 | 双窗口实时聊天全通：消息、未读红点、已读、正在输入、断线重连 | ✅ | 自动化（等价覆盖） | `npx vitest run tests/realtime/socket.test.ts` —— 7 条端到端用例 **全过**（9.0s，spawn 真实 `server.ts` + Socket.IO 客户端）：覆盖 **鉴权拒绝 / 会话加入权限 / 收发落库与实时送达 / 幂等重发 / 已读回执与未读清零 / typing 转发**。**断线增量拉取为 ChatWindow 客户端逻辑，未纳入自动化（未在浏览器实测）**。**由自动化 socket 套件覆盖双窗口行为，未开双浏览器窗口** |
 | 4 | 完整闭环：注册 → 认证 → 发布 → 搜索 → 收藏 → 聊天 → 标记已售 → 互评 → 后台审核/下架/封禁 | ✅ | 自动化 | 对应集成测试全绿：`auth` / `verifications` / `items-create` / `items-list` / `favorite` / `conversations` / `messages` / `item-manage` / `reviews` / `admin` |
 | 5 | 后台五个板块全部可用，仪表盘有数据 | ✅ | 自动化 + 静态审计 | 五个板块页面存在（`admin/page|items|users|reports|verifications`），`tests/api/admin.test.ts` + `tests/lib/admin-stats.test.ts` 全绿；`/admin` 未登录返回 **307 → /login?next=%2Fadmin**（管理员守卫生效）；seed 提供 2 条 `PENDING` 举报、2 条 `PENDING` 认证，仪表盘非空 |
 | 6 | Vitest 单元 + 集成测试全绿 | ✅ | 自动化 | `npm test` —— **Test Files 31 passed (31)，Tests 158 passed (158)**（50.9s） |
