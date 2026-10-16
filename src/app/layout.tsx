@@ -4,6 +4,7 @@ import './globals.css'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { ToastProvider } from '@/components/ui/Toast'
 import { getSessionUser } from '@/lib/auth'
+import { countUnreadMessages } from '@/lib/messages'
 
 export const metadata: Metadata = {
   title: '校园集市 · 校园二手交易平台',
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser((await cookies()).toString())
-  const unreadCount = 0 // T20 接入真实未读数
+  const unreadCount = user ? await countUnreadMessages(user.id) : 0
   return (
     <html lang="zh-CN">
       <body className="min-h-screen">

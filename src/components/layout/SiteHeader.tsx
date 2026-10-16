@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { UnreadBadge } from '@/components/layout/UnreadBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Icon } from '@/components/ui/Icon'
 
@@ -21,11 +22,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
         {user ? (
           <Link href="/me" className="relative shrink-0" aria-label="个人中心">
             <Avatar src={user.avatarUrl} name={user.username} size={32} />
-            {user.unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-price px-1 text-[10px] font-bold text-white">
-                {user.unreadCount > 99 ? '99+' : user.unreadCount}
-              </span>
-            )}
+            <UnreadBadge initialCount={user.unreadCount} />
           </Link>
         ) : (
           <div className="flex shrink-0 items-center gap-2 text-sm">

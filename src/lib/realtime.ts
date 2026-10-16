@@ -91,6 +91,12 @@ export function attachRealtime(io: SocketIOServer): void {
         const payloadOut = { message: toMessageData(message) }
         const recipientId = conversation.buyerId === user.id ? conversation.sellerId : conversation.buyerId
         io.to(userRoom(recipientId)).emit('message:new', payloadOut)
+        const isFirstMessage = (await prisma.message.count({ where: { conversationId } })) === 1
+        if (isFirstMessage) {
+          io.to(userRoom(recipientId)).emit('conversation:new', {
+            conversation: { id: conversationId, itemId: conversation.itemId },
+          })
+        }
         socket.to(conversationRoom(conversationId)).emit('message:new', payloadOut)
         ack?.({ ok: true, message: payloadOut.message })
       } catch {

@@ -98,6 +98,25 @@ describe('Socket.IO 实时层', () => {
     sellerSocket.disconnect()
   })
 
+  it('会话首条消息：对方同时收到 conversation:new', async () => {
+    const { seller, buyer, conversation } = await seedConversation()
+    const buyerSocket = await connect(await createTestSession(buyer.id))
+    const sellerSocket = await connect(await createTestSession(seller.id))
+    await emitAck(buyerSocket, 'conversation:join', { conversationId: conversation.id })
+
+    const newConversation = new Promise<{ conversation: { id: string } }>((resolve) => {
+      sellerSocket.on('conversation:new', resolve)
+    })
+    await emitAck(buyerSocket, 'message:send', {
+      conversationId: conversation.id, type: 'TEXT', content: '第一条消息', clientId: 'first-1',
+    })
+    const event = await newConversation
+    expect(event.conversation.id).toBe(conversation.id)
+
+    buyerSocket.disconnect()
+    sellerSocket.disconnect()
+  })
+
   it('相同 clientId 重发幂等：不产生第二条消息', async () => {
     const { buyer, conversation } = await seedConversation()
     const buyerSocket = await connect(await createTestSession(buyer.id))
