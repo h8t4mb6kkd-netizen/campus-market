@@ -1,9 +1,34 @@
 import { NextResponse } from 'next/server'
-import { errorResponse, readJson } from '@/lib/api'
+import { ApiError, errorResponse, readJson } from '@/lib/api'
 import { requireUser } from '@/lib/auth'
+import { CATEGORIES, type Category } from '@/lib/constants'
 import { prisma } from '@/lib/db'
+import { queryItems, toItemCardData, type ItemSort } from '@/lib/items'
 import { ensureSameOrigin } from '@/lib/origin'
-import { parseItemInput } from '@/lib/validators'
+import { paginationSchema, parseItemInput } from '@/lib/validators'
+
+export async function GET(req: Request): Promise<Response> {
+  try {
+    const url = new URL(req.url)
+    const { cursor, limit } = paginationSchema.parse({
+      cursor: url.searchParams.get('cursor') ?? undefined,
+      limit: url.searchParams.get('limit') ?? undefined,
+    })
+    const category = url.searchParams.get('category') ?? undefined
+    if (category && !CATEGORIES.includes(category as Category)) {
+      throw new ApiError('VALIDATION', '分类不存在')
+    }
+    const sortParam = url.searchParams.get('sort')
+    const sort: ItemSort =
+      sortParam === 'price_asc' || sortParam === 'price_desc' ? sortParam : 'latest'
+    const q = url.searchParams.get('q')?.trim() || undefined
+
+    const { items, nextCursor } = await queryItems({ category, q, sort, cursor, limit })
+    return NextResponse.json({ items: items.map(toItemCardData), nextCursor })
+  } catch (err) {
+    return errorResponse(err)
+  }
+}
 
 export async function POST(req: Request): Promise<Response> {
   try {
