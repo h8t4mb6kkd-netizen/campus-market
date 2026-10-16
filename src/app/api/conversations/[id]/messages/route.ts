@@ -20,8 +20,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
     const after = url.searchParams.get('after')
     if (after) {
+      const afterDate = new Date(after)
+      if (Number.isNaN(afterDate.getTime())) {
+        throw new ApiError('VALIDATION', 'after 参数不是合法时间')
+      }
       const messages = await prisma.message.findMany({
-        where: { conversationId: id, createdAt: { gt: new Date(after) } },
+        where: { conversationId: id, createdAt: { gt: afterDate } },
         orderBy: { createdAt: 'asc' },
         take: 200,
         include: messageInclude,

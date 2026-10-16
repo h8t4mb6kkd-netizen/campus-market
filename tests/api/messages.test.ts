@@ -67,6 +67,13 @@ describe('GET /api/conversations/[id]/messages', () => {
     expect(data.messages.map((m: { content: string }) => m.content)).toEqual(['消息2', '消息3'])
   })
 
+  it('after 参数非法 → 400', async () => {
+    const { buyer, conversation } = await seedConversationWithMessages(1)
+    const token = await createTestSession(buyer.id)
+    const res = await call(conversation.id, token, 'after=not-a-date')
+    expect(res.status).toBe(400)
+  })
+
   it('非会话成员 → 404；未登录 → 401', async () => {
     const { conversation } = await seedConversationWithMessages(1)
     const stranger = await createTestUser()
