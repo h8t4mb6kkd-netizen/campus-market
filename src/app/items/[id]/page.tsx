@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { CommentSection } from '@/components/item-detail/CommentSection'
 import { FavoriteButton } from '@/components/item-detail/FavoriteButton'
 import { ImageCarousel } from '@/components/item-detail/ImageCarousel'
+import { ReviewSection } from '@/components/item-detail/ReviewSection'
 import { SellerCard } from '@/components/item-detail/SellerCard'
 import { StatusBadge } from '@/components/ui/Badge'
 import { Icon } from '@/components/ui/Icon'
@@ -24,6 +25,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
       include: {
         images: { orderBy: { sort: 'asc' } },
         seller: true,
+        buyer: true,
       },
     })
     .catch((err: unknown) => {
@@ -49,6 +51,22 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
 
   const comments = await queryComments(item.id)
   const currentUser = user ? { id: user.id, username: user.username, avatarUrl: user.avatarUrl } : null
+
+  const reviews = await prisma.review.findMany({
+    where: { itemId: item.id },
+    orderBy: { createdAt: 'desc' },
+    include: { author: { select: { id: true, username: true, avatarUrl: true } } },
+  })
+  const reviewData = reviews.map((review) => ({
+    id: review.id,
+    rating: review.rating,
+    content: review.content,
+    createdAt: review.createdAt.toISOString(),
+    author: review.author,
+  }))
+  const isParticipant = user && item.status === 'SOLD' && (user.id === item.sellerId || user.id === item.buyerId)
+  const targetName = user && item.buyerId === user.id ? item.seller.username : item.buyer?.username ?? '买家' // 卖家视角评买家
+  const myReview = user ? reviewData.find((review) => review.author.id === user.id) ?? null : null
 
   return (
     <div className="grid gap-6 lg:grid-cols-5">
@@ -85,6 +103,13 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
           </div>
         </div>
         <SellerCard seller={item.seller} />
+        <ReviewSection
+          itemId={item.id}
+          canReview={Boolean(isParticipant)}
+          targetName={targetName}
+          myReview={myReview}
+          reviews={reviewData}
+        />
         <div className="rounded-card bg-surface p-4 shadow-card">
           <h2 className="mb-2 text-sm font-bold">商品描述</h2>
           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink/90">{item.description}</p>
