@@ -7,6 +7,7 @@ import { FavoriteButton } from '@/components/item-detail/FavoriteButton'
 import { ImageCarousel } from '@/components/item-detail/ImageCarousel'
 import { ReviewSection } from '@/components/item-detail/ReviewSection'
 import { SellerCard } from '@/components/item-detail/SellerCard'
+import { ReportButton } from '@/components/report/ReportButton'
 import { StatusBadge } from '@/components/ui/Badge'
 import { Icon } from '@/components/ui/Icon'
 import { getSessionUser } from '@/lib/auth'
@@ -112,6 +113,9 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
         <div className="rounded-card bg-surface p-4 shadow-card">
           <h2 className="mb-2 text-sm font-bold">商品描述</h2>
           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-ink/90">{item.description}</p>
+        </div>
+        <div className="text-right">
+          <ReportButton targetType="ITEM" targetId={item.id} isLoggedIn={Boolean(user)} />
         </div>
       </div>
     </div>

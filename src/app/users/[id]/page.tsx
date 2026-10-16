@@ -1,9 +1,12 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { ItemCard } from '@/components/item/ItemCard'
+import { ReportButton } from '@/components/report/ReportButton'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Icon } from '@/components/ui/Icon'
+import { getSessionUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { formatRelativeTime } from '@/lib/format'
 import { queryItems, toItemCardData } from '@/lib/items'
@@ -27,6 +30,8 @@ export default async function UserPage({
 
   const user = await prisma.user.findUnique({ where: { id } })
   if (!user || user.status === 'BANNED') notFound()
+
+  const sessionUser = await getSessionUser((await cookies()).toString())
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -52,6 +57,7 @@ export default async function UserPage({
             <span className="ml-3">{formatRelativeTime(user.createdAt)}加入</span>
           </p>
         </div>
+        <ReportButton targetType="USER" targetId={user.id} isLoggedIn={Boolean(sessionUser)} />
       </header>
 
       <nav className="mb-4 flex gap-2">
