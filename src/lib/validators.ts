@@ -94,3 +94,11 @@ export const paginationSchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 })
+
+export const statusActionSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('RESERVE') }),
+  z.object({ action: z.literal('UNRESERVE') }),
+  z.object({ action: z.literal('DELIST') }),
+  z.object({ action: z.literal('RELIST') }),
+  z.object({ action: z.literal('MARK_SOLD'), buyerId: z.string().min(1, '请选择买家') }),
+])
