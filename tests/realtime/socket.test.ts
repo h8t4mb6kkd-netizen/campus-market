@@ -143,9 +143,14 @@ describe('Socket.IO 实时层', () => {
     const readEvent = new Promise<{ conversationId: string }>((resolve) => {
       buyerSocket.on('message:read', resolve)
     })
+    const unreadEvent = new Promise<{ conversationId: string }>((resolve) => {
+      sellerSocket.on('unread:changed', resolve)
+    })
     await emitAck(sellerSocket, 'message:read', { conversationId: conversation.id })
     const event = await readEvent
     expect(event.conversationId).toBe(conversation.id)
+    const ownEvent = await unreadEvent
+    expect(ownEvent.conversationId).toBe(conversation.id)
     expect(await prisma.message.count({ where: { readAt: null } })).toBe(0)
 
     buyerSocket.disconnect()

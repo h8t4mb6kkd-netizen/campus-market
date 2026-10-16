@@ -120,6 +120,7 @@ export function attachRealtime(io: SocketIOServer): void {
         })
         const recipientId = conversation.buyerId === user.id ? conversation.sellerId : conversation.buyerId
         io.to(userRoom(recipientId)).emit('message:read', { conversationId: conversation.id, readAt: readAt.toISOString() })
+        io.to(userRoom(user.id)).emit('unread:changed', { conversationId: conversation.id })
         ack?.({ ok: true })
       } catch {
         ack?.({ ok: false, error: { code: 'INTERNAL', message: '操作失败' } })

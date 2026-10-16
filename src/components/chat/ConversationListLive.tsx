@@ -19,10 +19,13 @@ export function ConversationListLive({ children }: { children: ReactNode }) {
     socket.on('message:new', refresh)
     socket.on('message:read', refresh)
     socket.on('conversation:new', refresh)
+    socket.on('unread:changed', refresh)
     return () => {
       socket.off('message:new', refresh)
       socket.off('message:read', refresh)
       socket.off('conversation:new', refresh)
+      socket.off('unread:changed', refresh)
+      if (timer.current) clearTimeout(timer.current)
     }
   }, [socket, router])
 

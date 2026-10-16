@@ -21,10 +21,10 @@ export function UnreadBadge({ initialCount }: { initialCount: number }) {
       if (res.ok) setCount((await res.json()).count)
     }
     socket.on('message:new', refresh)
-    socket.on('message:read', refresh)
+    socket.on('unread:changed', refresh)
     return () => {
       socket.off('message:new', refresh)
-      socket.off('message:read', refresh)
+      socket.off('unread:changed', refresh)
     }
   }, [socket])
 
