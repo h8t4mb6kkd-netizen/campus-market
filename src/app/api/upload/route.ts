@@ -23,7 +23,8 @@ export async function POST(req: Request): Promise<Response> {
     let stored
     try {
       stored = await storage.putImage(buffer)
-    } catch {
+    } catch (err) {
+      console.error('[upload] 图片处理失败:', err)
       throw new ApiError('VALIDATION', '文件不是有效图片')
     }
     return NextResponse.json(stored)
