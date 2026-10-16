@@ -28,13 +28,15 @@ function release(): void {
 
 /** 全标签页共享一条 Socket 连接；无登录态时用 enabled=false 关闭 */
 export function useSocket(enabled = true): { socket: Socket | null; connected: boolean } {
-  // 惰性初始化：首帧即拿到共享连接，避免 effect 内同步 setState 造成的级联渲染
-  const [socket] = useState<Socket | null>(() => (enabled ? acquire() : null))
-  const [connected, setConnected] = useState(() => socket?.connected ?? false)
+  const [socket, setSocket] = useState<Socket | null>(null)
+  const [connected, setConnected] = useState(false)
 
   useEffect(() => {
     if (!enabled) return
-    const instance = socket ?? acquire()
+    const instance = acquire()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 订阅外部系统（共享 Socket）必须在 effect 中建立；SSR 不执行 effect，StrictMode 下 acquire/release 严格配对
+    setSocket(instance)
+    setConnected(instance.connected)
     const onConnect = () => setConnected(true)
     const onDisconnect = () => setConnected(false)
     instance.on('connect', onConnect)
@@ -42,9 +44,11 @@ export function useSocket(enabled = true): { socket: Socket | null; connected: b
     return () => {
       instance.off('connect', onConnect)
       instance.off('disconnect', onDisconnect)
+      setSocket(null)
+      setConnected(false)
       release()
     }
-  }, [enabled, socket])
+  }, [enabled])
 
   return { socket, connected }
 }
