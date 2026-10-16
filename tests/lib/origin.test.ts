@@ -19,6 +19,6 @@ describe('ensureSameOrigin', () => {
     expect(() => ensureSameOrigin(req('GET', { origin: 'https://evil.com', host: 'localhost:3000' }))).not.toThrow()
   })
   it('畸形 Origin 字符串 → 抛 FORBIDDEN', () => {
-    expect(() => ensureSameOrigin(req('POST', { origin: 'not-a-url', host: 'localhost:3000' }))).toThrow()
+    expect(() => ensureSameOrigin(req('POST', { origin: 'not-a-url', host: 'localhost:3000' }))).toThrowError('来源不合法')
   })
 })
