@@ -1,0 +1,21 @@
+# deps / build
+node_modules/
+.next/
+out/
+build/
+
+# env
+.env
+.env.*
+!.env.example
+
+# uploads（保留目录占位）
+public/uploads/*
+!public/uploads/.gitkeep
+
+# brainstorming 美术稿（本地保留，不入库）
+.superpowers/
+
+# misc
+*.log
+.DS_Store
