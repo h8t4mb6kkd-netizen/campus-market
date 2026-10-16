@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { ChatButton } from '@/components/item-detail/ChatButton'
@@ -15,6 +16,19 @@ import { queryComments, toCommentData } from '@/lib/comments'
 import { CATEGORY_LABELS, CONDITION_LABELS, type Category, type Condition, type ItemStatus } from '@/lib/constants'
 import { prisma } from '@/lib/db'
 import { formatPrice, formatRelativeTime } from '@/lib/format'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const item = await prisma.item.findUnique({
+    where: { id },
+    select: { title: true, description: true },
+  })
+  if (!item) return { title: '商品不存在' }
+  return {
+    title: item.title,
+    description: item.description.slice(0, 80),
+  }
+}
 
 export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

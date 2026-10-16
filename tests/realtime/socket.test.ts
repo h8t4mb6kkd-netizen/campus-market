@@ -54,7 +54,7 @@ describe('Socket.IO 实时层', () => {
   })
 
   it('带会话连接成功；非参与者 join 被拒；参与者 join 成功', async () => {
-    const { seller, buyer, conversation } = await seedConversation()
+    const { buyer, conversation } = await seedConversation()
     const stranger = await createTestUser()
 
     const buyerSocket = await connect(await createTestSession(buyer.id))

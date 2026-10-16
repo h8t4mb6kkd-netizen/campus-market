@@ -37,8 +37,12 @@ export function ChatWindow({
   const [loadingMore, setLoadingMore] = useState(false)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const messagesRef = useRef(messages)
-  messagesRef.current = messages
   const hasConnectedRef = useRef(false)
+
+  // 始终指向最新消息列表，供事件回调 / 重连拉取读取（不在渲染期写 ref）
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
 
   // 进入会话：join + 标记已读（断线重连后自动重放）
   useEffect(() => {

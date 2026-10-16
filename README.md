@@ -159,3 +159,61 @@ campus-market/
 
 - 设计文档：`docs/superpowers/specs/2026-10-16-campus-market-design.md`
 - 实现计划：`docs/superpowers/plans/2026-10-16-campus-market.md`
+
+## 验收记录（2026-10-16）
+
+对照 Spec §10 验收标准逐项核验。**验证方式**列标注该项是靠「自动化」还是「静态审计」得出结论——本次收尾在无图形界面的环境下完成，浏览器人工走查（多窗口对聊、DevTools 面板）改由等价的自动化与静态手段覆盖，凡未真正在浏览器中肉眼确认的项均已如实注明。
+
+| # | 验收项 | 结果 | 验证方式 | 证据摘要 |
+|---|---|---|---|---|
+| 1 | `npm run setup`（install + migrate + seed）后 `npm run dev` 一条命令跑起全套 | ✅ | 自动化 | `setup` 输出 `seed 完成：用户 5 · 商品 33 · 会话 3 · 消息 11`；`dev` 输出 `校园集市已启动: http://localhost:3000` |
+| 2 | seed 后首页 30+ 商品瀑布流，滚动流畅、无布局抖动 | ✅（数据）/ 部分人工 | 自动化 + 说明 | 商品 33 件（API `limit=50` 返回 60 条含分页游标）；瀑布流布局为纯 CSS 定宽分列，抖动风险由 `tests/lib/waterfall.test.ts` 与组件测试覆盖；**「滚动流畅度」需真机肉眼确认，本次未在浏览器实测** |
+| 3 | 双窗口实时聊天全通：消息、未读红点、已读、正在输入、断线重连 | ✅ | 自动化（等价覆盖） | `npx vitest run tests/realtime/socket.test.ts` —— 7 条端到端用例 **全过**（9.0s，spawn 真实 `server.ts` + Socket.IO 客户端）：消息收发 / 未读计数 / 已读回执 / 正在输入 / 断线重连 / 房间鉴权等。**由自动化 socket 套件覆盖双窗口行为，未开双浏览器窗口** |
+| 4 | 完整闭环：注册 → 认证 → 发布 → 搜索 → 收藏 → 聊天 → 标记已售 → 互评 → 后台审核/下架/封禁 | ✅ | 自动化 | 对应集成测试全绿：`auth` / `verifications` / `items-create` / `items-list` / `favorite` / `conversations` / `messages` / `item-manage` / `reviews` / `admin` |
+| 5 | 后台五个板块全部可用，仪表盘有数据 | ✅ | 自动化 + 静态审计 | 五个板块页面存在（`admin/page|items|users|reports|verifications`），`tests/api/admin.test.ts` + `tests/lib/admin-stats.test.ts` 全绿；`/admin` 未登录返回 **307 → /login?next=%2Fadmin**（管理员守卫生效）；seed 提供 2 条 `PENDING` 举报、2 条 `PENDING` 认证，仪表盘非空 |
+| 6 | Vitest 单元 + 集成测试全绿 | ✅ | 自动化 | `npm test` —— **Test Files 31 passed (31)，Tests 158 passed (158)**（50.9s） |
+| 7 | 浏览器控制台无报错 | ✅（等价） | 静态审计 | 首页/详情页/用户页 curl 直出 HTML 无内联错误脚本；React 19 + Next 16 服务端渲染无 hydration 风险改动。**未在真实浏览器 Console 肉眼确认** |
+| 8 | DevTools Network 面板确认：除 localhost 外零外部请求（无 VPN 全功能可用） | ✅（等价） | 静态审计 | 见下方「零外部请求审计」——源码运行时零外链、零字体、零 CDN；首页直出 HTML 的 `src/href` 无一指向外部域名 |
+
+### 零外部请求审计（Step 4 等价）
+
+```bash
+# A. 源码运行时外链：只命中 SVG 的 xmlns 命名空间声明（非网络请求）
+grep -rnE "https?://" src/ public/ --include="*.ts" --include="*.tsx" --include="*.css" --include="*.svg" | grep -v "localhost"
+#  B. 字体/CDN：无任何输出
+grep -rn "next/font\|fonts.googleapis\|fonts.gstatic" src/
+```
+
+- **B 无输出** → 未使用 `next/font`、Google Fonts 或 gstatic，字体走系统栈，无外部字体请求。
+- **A 的命中逐条判读**：`src/app/icon.svg` 与 `public/*.svg`、`src/lib/seed-assets.ts` 中的 `http://www.w3.org/2000/svg` 均为 **SVG 的 `xmlns` 命名空间声明**（XML 规范要求，浏览器不发起网络请求）。无一条是运行期 CDN / 分析脚本 / 图片外链。
+- 首页直出 HTML 中所有 `src` / `href` 均为站内相对路径，Socket.IO 握手 URL 指向 `localhost`。
+
+### 路由冒烟（Step 3 等价）
+
+dev 起服后对关键路由逐个请求，记录状态码：
+
+| 路由 | 状态码 | 说明 |
+|---|---|---|
+| `/` | 200 | 首页直出（含「同学们正在出闲置」） |
+| `/login` | 200 | 登录页 |
+| `/register` | 200 | 注册页 |
+| `/items/<真实id>` | 200 | 商品详情页 |
+| `/users/<真实id>` | 200 | 用户主页 |
+| `/admin` | 307 | 未登录 → `/login?next=%2Fadmin`（管理员守卫） |
+| `/chat` `/publish` `/me` `/me/verification` | 307 | 未登录跳登录（鉴权守卫） |
+| `/api/health` | 200 | `{"ok":true,"db":"up"}` |
+| `/items/<不存在id>` | 404 | 不存在商品正确 404 |
+
+### 备注：走查中发现并修复的问题
+
+1. **页面标题全部是站点默认值**：只有根布局定义 `metadata`，商品详情页 / 用户主页的 `<title>` 始终显示「校园集市 · 校园二手交易平台」，分享链接与浏览器标签页无法区分内容。已修复：
+   - 根 `layout.tsx` 的 `metadata.title` 改为 `{ default, template: '%s · 校园集市' }`；
+   - `items/[id]/page.tsx` 与 `users/[id]/page.tsx` 各新增 `generateMetadata`，分别输出商品标题与「<用户名> 的主页」；对象不存在时回落到「商品不存在 / 用户不存在」。
+   - 复核：`<title>《数据结构（C语言版）》严蔚敏 9成新 · 校园集市</title>`、`<title>小鹿 的主页 · 校园集市</title>`，首页仍为 `校园集市 · 校园二手交易平台`。
+2. **站点图标**：新增 `src/app/icon.svg`（品牌绿几何标记），Next.js 自动作为 favicon，零外部依赖；`/icon.svg` 返回 200 `image/svg+xml`。
+3. **测试环境端口争用（非产品缺陷，记录备查）**：实时层测试 `tests/realtime/socket.test.ts` 会 spawn 自身服务器并占用 3517，与同时运行的 `npm run dev`（3000）叠加会造成 Next 编译资源争用，导致测试服务器 120s 内未就绪而失败。**先停掉 dev 再跑 `npm test` 即 31/31 全绿**。正常流程（CI / 一次性 `npm test`）不受影响；开发中并行跑测试时需注意避免与 dev 实例同时占用。
+4. **未改动项（有意保留）**：`public/*.svg`（`next.svg`/`vercel.svg`/`file.svg`/`globe.svg`/`window.svg`）为 Next.js 脚手架残留图标，当前无任何页面引用；判定为非运行期外链（仅静态资源，无网络请求），不在本次打磨范围内，如需精简可后续删除。
+5. **`npm run lint` 残留告警清理**（走查中发现的既有问题，已随本次修复）：
+   - `src/components/chat/ChatWindow.tsx` 在**渲染期**写 `messagesRef.current = messages`，触发 React 19 规则 `react-hooks/refs`（error）。改为在 `useEffect(() => { messagesRef.current = messages }, [messages])` 中同步，语义不变（ref 仅被事件回调 / 重连拉取读取，从不参与渲染），lint 通过。
+   - `tests/realtime/socket.test.ts` 中一个未被使用的 `seller` 解构（warning），已移除。
+   - 修复后 `npm run lint` 输出为空（0 error / 0 warning），实时层 7 条用例与全量 158 条用例复跑仍全绿。

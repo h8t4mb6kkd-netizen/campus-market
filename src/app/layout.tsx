@@ -7,7 +7,10 @@ import { getSessionUser } from '@/lib/auth'
 import { countUnreadMessages } from '@/lib/messages'
 
 export const metadata: Metadata = {
-  title: '校园集市 · 校园二手交易平台',
+  title: {
+    default: '校园集市 · 校园二手交易平台',
+    template: '%s · 校园集市',
+  },
   description: '大学校园二手交易平台：发布闲置、实时沟通、当面交易、互评信誉。',
 }
 

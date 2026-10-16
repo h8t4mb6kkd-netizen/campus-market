@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { ItemCard } from '@/components/item/ItemCard'
@@ -16,6 +17,13 @@ const TABS = [
   { key: 'sold', label: '已售' },
   { key: 'reviews', label: '评价' },
 ] as const
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const user = await prisma.user.findUnique({ where: { id }, select: { username: true, status: true } })
+  if (!user || user.status === 'BANNED') return { title: '用户不存在' }
+  return { title: `${user.username} 的主页` }
+}
 
 export default async function UserPage({
   params,
