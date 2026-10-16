@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
+import { ChatButton } from '@/components/item-detail/ChatButton'
 import { CommentSection } from '@/components/item-detail/CommentSection'
 import { FavoriteButton } from '@/components/item-detail/FavoriteButton'
 import { ImageCarousel } from '@/components/item-detail/ImageCarousel'
@@ -97,9 +98,7 @@ export default async function ItemDetailPage({ params }: { params: Promise<{ id:
               initialCount={item.favoriteCount}
               isLoggedIn={Boolean(user)}
             />
-            <button type="button" disabled className="flex-1 rounded-btn bg-brand px-3 py-2 text-sm font-semibold text-white opacity-60">
-              <Icon name="chat" size={15} className="mr-1 inline" />聊一聊
-            </button>
+            <ChatButton itemId={item.id} isLoggedIn={Boolean(user)} isOwner={user?.id === item.sellerId} />
           </div>
         </div>
         <SellerCard seller={item.seller} />

@@ -90,6 +90,10 @@ export const verificationReviewSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('REJECT'), reason: z.string().trim().min(2, '请填写驳回理由').max(200) }),
 ])
 
+export const createConversationSchema = z.object({
+  itemId: z.string().min(1, '缺少商品'),
+})
+
 export const paginationSchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
