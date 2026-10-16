@@ -45,7 +45,7 @@ const ITEMS: ItemSeed[] = [
   { title: '罗技 G304 无线游戏鼠标', priceYuan: 110, category: 'DIGITAL', condition: 'LIKE_NEW_80', location: '北区宿舍', negotiable: false, seller: 4 },
   { title: 'Kindle Paperwhite 4 8G 带原装壳', priceYuan: 380, category: 'DIGITAL', condition: 'LIKE_NEW_90', location: '南区2号楼', negotiable: true, seller: 3 },
   { title: '联想小新 65W 氮化镓充电器', priceYuan: 60, category: 'DIGITAL', condition: 'LIKE_NEW_99', location: '西区4号楼', negotiable: false, seller: 2 },
-  { title: '捷安特 ATX 660 通勤山地车', priceYuan: 260, category: 'TRANSPORT', condition: 'LIKE_NEW_80', location: '西区车棚', negotiable: true, seller: 2 },
+  { title: '捷安特 ATX 660 通勤山地车', priceYuan: 260, category: 'TRANSPORT', condition: 'LIKE_NEW_80', location: '西区车棚', negotiable: true, seller: 2, status: 'RESERVED' },
   { title: '迪卡侬 折叠自行车 20寸', priceYuan: 180, category: 'TRANSPORT', condition: 'LIKE_NEW_90', location: '东区车棚', negotiable: true, seller: 1 },
   { title: '九号电动滑板车 ES1', priceYuan: 450, category: 'TRANSPORT', condition: 'LIKE_NEW_80', location: '南区车棚', negotiable: true, seller: 3 },
   { title: '宿舍小冰箱 45L 一级能效', priceYuan: 80, category: 'DORM', condition: 'LIKE_NEW_90', location: '南区1号楼', negotiable: true, seller: 3 },
@@ -66,7 +66,7 @@ const ITEMS: ItemSeed[] = [
   { title: '冲锋衣 女 M码 三合一可拆', priceYuan: 180, category: 'CLOTHING', condition: 'LIKE_NEW_90', location: '西区4号楼', negotiable: true, seller: 2 },
   { title: '宜家小推车 三层 白色', priceYuan: 35, category: 'OTHER', condition: 'LIKE_NEW_90', location: '东区3号楼', negotiable: false, seller: 1 },
   { title: '多肉盆栽 含陶盆 共5盆', priceYuan: 30, category: 'OTHER', condition: 'NEW', location: '南区2号楼', negotiable: true, seller: 3 },
-  { title: '得力 A4 打印纸 500张×5包', priceYuan: 40, category: 'OTHER', condition: 'NEW', location: '北区宿舍', negotiable: false, seller: 4 },
+  { title: '得力 A4 打印纸 500张×5包', priceYuan: 40, category: 'OTHER', condition: 'NEW', location: '北区宿舍', negotiable: false, seller: 4, status: 'DELISTED' },
   { title: '航模入门 四轴无人机 带备件', priceYuan: 260, category: 'OTHER', condition: 'LIKE_NEW_80', location: '西区4号楼', negotiable: true, seller: 2 },
 ]
 

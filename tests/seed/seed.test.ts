@@ -15,5 +15,7 @@ describe('seed 脚本', () => {
     expect(await prisma.review.count()).toBeGreaterThanOrEqual(4)
     expect(await prisma.verificationRequest.count({ where: { status: 'PENDING' } })).toBe(2)
     expect(await prisma.report.count({ where: { status: 'PENDING' } })).toBe(2)
+    expect(await prisma.item.count({ where: { status: 'RESERVED' } })).toBeGreaterThanOrEqual(1)
+    expect(await prisma.item.count({ where: { status: 'DELISTED' } })).toBeGreaterThanOrEqual(1)
   }, 180_000)
 })
