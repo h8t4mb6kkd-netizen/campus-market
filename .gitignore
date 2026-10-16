@@ -16,6 +16,9 @@ public/uploads/*
 # brainstorming 美术稿（本地保留，不入库）
 .superpowers/
 
+# git worktree 工作区
+.worktrees/
+
 # misc
 *.log
 .DS_Store
