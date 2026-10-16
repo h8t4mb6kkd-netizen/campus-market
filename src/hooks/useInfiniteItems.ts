@@ -75,5 +75,5 @@ export function useInfiniteItems(
     return () => observer.disconnect()
   }, [loadMore, nextCursor])
 
-  return { columns: state.columns, columnCount, sentinelRef, loading, hasMore: nextCursor !== null }
+  return { columns: state.columns, columnCount, sentinelRef, loading, hasMore: nextCursor !== null, retry: loadMore }
 }

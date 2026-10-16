@@ -21,6 +21,9 @@ export function waterfallAppend<T>(
   entries: WaterfallEntry<T>[],
   columnCount: number,
 ): WaterfallState<T> {
+  if (prev && prev.columns.length !== columnCount) {
+    throw new Error('waterfallAppend: columnCount 与 prev 的列数不一致')
+  }
   const columns: T[][] = prev
     ? prev.columns.map((col) => [...col])
     : Array.from({ length: columnCount }, () => [])
